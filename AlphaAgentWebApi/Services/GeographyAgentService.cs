@@ -1,9 +1,6 @@
 using AlphaAgentWebApi.Interfaces;
 using AlphaAgentWebApi.Models;
-using AlphaAgentWebApi.Configuration;
-using AlphaAgentWebApi.Constants;
 using Microsoft.Agents.AI;
-using Microsoft.Extensions.Options;
 using System.Text.Json;
 
 namespace AlphaAgentWebApi.Services;
@@ -12,27 +9,9 @@ public class GeographyAgentService : IGeographyAgentService
 {
     private readonly AIAgent _geographyAgent;
 
-    public GeographyAgentService(IAgentFactory agentFactory, IOptions<AgentConfiguration> agentConfig)
+    public GeographyAgentService(IAgentProvider agentProvider)
     {
-        var config = agentConfig.Value;
-        var geographyOptions = new ChatClientAgentOptions
-        {
-            Instructions = config.Agents[AgentNames.GeographyAgent].Instructions,
-            Name = config.Agents[AgentNames.GeographyAgent].Name,
-            ChatOptions = new()
-            {
-                ResponseFormat = Microsoft.Extensions.AI.ChatResponseFormat.ForJsonSchema<GeographyResponse>()
-            }
-        };
-        
-        if (config.Agents.TryGetValue(AgentNames.GeographyAgent, out var geoAgentSettings))
-        {
-            _geographyAgent = agentFactory.CreateAgent(geographyOptions);
-        }
-        else
-        {
-            throw new InvalidOperationException($"{AgentNames.GeographyAgent} not found in configuration");
-        }
+        _geographyAgent = agentProvider.GetGeographyAgent();
     }
 
     public async Task<GeographyResponse> AskGeographyAsync(string question)
