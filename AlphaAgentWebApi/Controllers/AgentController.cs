@@ -43,7 +43,7 @@ public class AgentController : ControllerBase
     [HttpPost("orchestrator")]
     public async Task<ActionResult<AgentResponse>> AskOrchestrator([FromBody] AgentRequest request)
     {
-        var response = await _orchestratorAgentService.AskOrchestratorAsync(request.Question);
+        var response = await _orchestratorAgentService.AskOrchestratorAsync(request.Question, request.ThreadId);
         return Ok(response);
     }
 }

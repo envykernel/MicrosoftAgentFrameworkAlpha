@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.VectorData;
 using Microsoft.SemanticKernel.Connectors.MongoDB;
 
@@ -13,40 +14,75 @@ namespace AlphaAgentWebApi.Stores;
 internal sealed class VectorChatMessageStore : ChatMessageStore
 {
     private readonly MongoVectorStore _mongoVectorStore;
+    private readonly ILogger<VectorChatMessageStore>? _logger;
+    
     public VectorChatMessageStore(
         MongoVectorStore mongoVectorStore,
         JsonElement serializedStoreState,
-        JsonSerializerOptions? jsonSerializerOptions = null)
+        JsonSerializerOptions? jsonSerializerOptions = null,
+        ILogger<VectorChatMessageStore>? logger = null)
     {
         this._mongoVectorStore = mongoVectorStore ?? throw new ArgumentNullException(nameof(mongoVectorStore));
+        this._logger = logger;
+        
+        // Extract ThreadDbKey from serialized state
+        // When deserializing, ctx.SerializedState contains the value from "storeState" property (the threadId string)
         if (serializedStoreState.ValueKind is JsonValueKind.String)
         {
-            this.ThreadDbKey = serializedStoreState.Deserialize<string>();
+            var threadIdString = serializedStoreState.GetString();
+            if (!string.IsNullOrWhiteSpace(threadIdString))
+            {
+                this.ThreadDbKey = threadIdString;
+            }
         }
     }
 
-    public string? ThreadDbKey { get; private set; }
+    public string? ThreadDbKey { get; internal set; }
 
     public override async Task AddMessagesAsync(
         IEnumerable<ChatMessage> messages,
         CancellationToken cancellationToken)
     {
         this.ThreadDbKey ??= Guid.NewGuid().ToString("N");
+        
+        // Materialize the messages to ensure all are captured
+        var messagesList = messages.ToList();
+        
+        var baseTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        
         var collection = this._mongoVectorStore.GetCollection<string, ChatHistoryItem>("chat_history");
         await collection.EnsureCollectionExistsAsync(cancellationToken);
-        await collection.UpsertAsync(messages.Select(x => new ChatHistoryItem()
+        
+        var chatHistoryItems = messagesList.Select((x, index) =>
         {
-            Key = this.ThreadDbKey + x.MessageId,
-            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-            ThreadId = this.ThreadDbKey,
-            SerializedMessage = JsonSerializer.Serialize(x),
-            MessageText = x.Text
-        }), cancellationToken);
+            // Generate unique key: if MessageId is null/empty.
+            var messageIdPart = !string.IsNullOrWhiteSpace(x.MessageId) 
+                ? x.MessageId 
+                : $"{baseTimestamp}_{index}";
+            var key = this.ThreadDbKey + messageIdPart;
+            
+            return new ChatHistoryItem()
+            {
+                Key = key,
+                Timestamp = baseTimestamp + index,
+                ThreadId = this.ThreadDbKey,
+                SerializedMessage = JsonSerializer.Serialize(x),
+                MessageText = x.Text
+            };
+        }).ToList();
+        
+        await collection.UpsertAsync(chatHistoryItems, cancellationToken);
     }
 
     public override async Task<IEnumerable<ChatMessage>> GetMessagesAsync(
         CancellationToken cancellationToken)
     {
+        // If ThreadDbKey is null, return empty (messages haven't been loaded yet or thread is new)
+        if (string.IsNullOrWhiteSpace(this.ThreadDbKey))
+        {
+            return Array.Empty<ChatMessage>();
+        }
+
         var collection = this._mongoVectorStore.GetCollection<string, ChatHistoryItem>("chat_history");
         await collection.EnsureCollectionExistsAsync(cancellationToken);
         var records = collection
@@ -65,7 +101,15 @@ internal sealed class VectorChatMessageStore : ChatMessageStore
         return messages;
     }
 
-    public override JsonElement Serialize(JsonSerializerOptions? jsonSerializerOptions = null) =>
+    public override JsonElement Serialize(JsonSerializerOptions? jsonSerializerOptions = null)
+    {
         // We have to serialize the thread id, so that on deserialization you can retrieve the messages using the same thread id.
-        JsonSerializer.SerializeToElement(this.ThreadDbKey);
+        // Only create a new ThreadDbKey if it's null and we haven't added messages yet
+        // If ThreadDbKey was set during deserialization or AddMessagesAsync, preserve it
+        if (string.IsNullOrWhiteSpace(this.ThreadDbKey))
+        {
+            this.ThreadDbKey = Guid.NewGuid().ToString("N");
+        }
+        return JsonSerializer.SerializeToElement(this.ThreadDbKey);
+    }
 }

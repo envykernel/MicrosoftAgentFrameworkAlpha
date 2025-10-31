@@ -6,6 +6,7 @@ using AlphaAgentWebApi.Stores;
 using Azure.AI.OpenAI;
 using Azure.Identity;
 using Microsoft.Agents.AI;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel.Connectors.MongoDB;
 using MongoDB.Driver;
@@ -24,13 +25,16 @@ public class AgentProvider : IAgentProvider
     private readonly string _endpoint;
     private readonly DefaultAzureCredential _credential;
     private readonly IMongoDatabase _mongoDatabase;
+    private readonly ILoggerFactory? _loggerFactory;
 
     public AgentProvider(
         IOptions<AgentConfiguration> agentConfig,
-        IMongoDatabase mongoDatabase)
+        IMongoDatabase mongoDatabase,
+        ILoggerFactory? loggerFactory = null)
     {
         _config = agentConfig.Value;
         _mongoDatabase = mongoDatabase;
+        _loggerFactory = loggerFactory;
 
         // Initialize Azure OpenAI connection (previously in AgentFactory)
         _deploymentName =
@@ -121,11 +125,13 @@ public class AgentProvider : IAgentProvider
             {
                 // Create a new chat message store for this agent that stores the messages in a vector store.
                 var mongoVectorStore = new MongoVectorStore(_mongoDatabase);
+                var logger = _loggerFactory?.CreateLogger<VectorChatMessageStore>();
                 
                 return new VectorChatMessageStore(
                     mongoVectorStore,
                     ctx.SerializedState,
-                    ctx.JsonSerializerOptions);
+                    ctx.JsonSerializerOptions,
+                    logger);
             }
         };
 

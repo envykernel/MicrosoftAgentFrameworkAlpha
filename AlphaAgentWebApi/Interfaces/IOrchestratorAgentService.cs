@@ -5,6 +5,6 @@ namespace AlphaAgentWebApi.Interfaces;
 
 public interface IOrchestratorAgentService
 {
-    Task<AgentResponse> AskOrchestratorAsync(string question, AgentThread? thread = null);
+    Task<AgentResponse> AskOrchestratorAsync(string question, string? threadId = null);
 }
 

@@ -95,7 +95,37 @@
 								"orchestrator"
 							]
 						},
-						"description": "Send a question to the Orchestrator Agent and get a response"
+						"description": "Send a question to the Orchestrator Agent and get a response. The response will include a threadId that can be used to continue the conversation."
+					},
+					"response": []
+				},
+				{
+					"name": "Continue Orchestrator Conversation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"question\": \"What was the previous answer?\",\n    \"threadId\": \"YOUR_THREAD_ID_HERE\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/agent/orchestrator",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"agent",
+								"orchestrator"
+							]
+						},
+						"description": "Continue a conversation with the Orchestrator Agent by providing the threadId from a previous response. Replace YOUR_THREAD_ID_HERE with the actual threadId."
 					},
 					"response": []
 				}
