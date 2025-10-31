@@ -1,0 +1,41 @@
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: alphaagents-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: alphaagentsuser
+      MONGO_INITDB_ROOT_PASSWORD: alphaagentspassword
+      MONGO_INITDB_DATABASE: alphaagentsdb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: alphaagents-mongo-express
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: alphaagentsuser
+      ME_CONFIG_MONGODB_ADMINPASSWORD: alphaagentspassword
+      ME_CONFIG_MONGODB_URL: mongodb://alphaagentsuser:alphaagentspassword@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin
+    ports:
+      - "8081:8081"
+    volumes:
+      - mongo_express_data:/data/db
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+  mongo_express_data:
+

@@ -1,6 +1,8 @@
 using AlphaAgentWebApi.Interfaces;
 using AlphaAgentWebApi.Configuration;
 using AlphaAgentWebApi.Services;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +10,21 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.Configure<AgentConfiguration>(builder.Configuration.GetSection("AgentConfiguration"));
+
+// Register MongoDB services
+builder.Services.AddSingleton<MongoClient>(sp =>
+{
+    var config = sp.GetRequiredService<IOptions<AgentConfiguration>>().Value;
+    return new MongoClient(config.MongoDbConnectionString);
+});
+
+builder.Services.AddSingleton<IMongoDatabase>(sp =>
+{
+    var mongoClient = sp.GetRequiredService<MongoClient>();
+    var config = sp.GetRequiredService<IOptions<AgentConfiguration>>().Value;
+    return mongoClient.GetDatabase(config.MongoDbDatabaseName);
+});
+
 builder.Services.AddSingleton<IAgentProvider, AgentProvider>();
 builder.Services.AddScoped<IGeographyAgentService, GeographyAgentService>();
 builder.Services.AddScoped<IMathAgentService, MathAgentService>();

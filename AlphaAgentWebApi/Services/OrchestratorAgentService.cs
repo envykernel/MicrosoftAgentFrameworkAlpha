@@ -17,9 +17,14 @@ public class OrchestratorAgentService : IOrchestratorAgentService
         _mathAgent = agentProvider.GetMathAgent();
     }
 
-    public async Task<AgentResponse> AskOrchestratorAsync(string question)
+    public async Task<AgentResponse> AskOrchestratorAsync(string question, AgentThread? thread = null)
     {
-        var result = await _orchestratorAgent.RunAsync(question);
+        if (thread == null)
+        {
+            thread = _orchestratorAgent.GetNewThread(); 
+        }
+
+        var result = await _orchestratorAgent.RunAsync(question, thread);
         return new AgentResponse
         {
             Response = result.ToString()

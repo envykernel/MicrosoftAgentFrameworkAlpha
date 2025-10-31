@@ -68,6 +68,36 @@
 						"description": "Send a question to the Math Agent and get a response"
 					},
 					"response": []
+				},
+				{
+					"name": "Ask Orchestrator Agent",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"question\": \"What is the capital of France and calculate 15 * 23?\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/agent/orchestrator",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"agent",
+								"orchestrator"
+							]
+						},
+						"description": "Send a question to the Orchestrator Agent and get a response"
+					},
+					"response": []
 				}
 			]
 		}
