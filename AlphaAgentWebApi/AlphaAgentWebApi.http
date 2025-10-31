@@ -1,0 +1,6 @@
+@AlphaAgentWebApi_HostAddress = http://localhost:5190
+
+GET {{AlphaAgentWebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

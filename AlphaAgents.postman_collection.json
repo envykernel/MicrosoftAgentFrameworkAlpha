@@ -1,0 +1,82 @@
+{
+	"info": {
+		"_postman_id": "alpha-agents-collection",
+		"name": "Alpha Agents API",
+		"description": "Collection for Alpha Agents API endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Agent",
+			"item": [
+				{
+					"name": "Ask Geography Agent",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"question\": \"What is the capital of France?\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/agent/geography",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"agent",
+								"geography"
+							]
+						},
+						"description": "Send a question to the Geography Agent and get a response"
+					},
+					"response": []
+				},
+				{
+					"name": "Ask Math Agent",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"question\": \"What is 15 * 23?\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/agent/math",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"agent",
+								"math"
+							]
+						},
+						"description": "Send a question to the Math Agent and get a response"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5190",
+			"type": "string"
+		}
+	]
+}
